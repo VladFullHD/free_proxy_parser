@@ -4,6 +4,7 @@ import lxml
 import time
 import csv
 import os
+import re
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -108,23 +109,41 @@ def get_free_proxy(url, filename='proxies.html', headers=None, output_filename='
 
     # Создает объект BeautifulSoup из полученной HTML-страницы для дальнейшей обработки данных
     soup = BeautifulSoup(html, 'lxml')
+
     proxies = []
 
+    # Собираем информацию из атрибута класса spy1x
+    tr_spy1x = soup.find_all('tr', class_='spy1x')
+    for tr in tr_spy1x:
+        font_spy14 = tr.find('font', class_='spy14')
+        if font_spy14:
+            ip = font_spy14.text.strip()
+            if ip not in proxies: # Проверяем, есть ли уже такой IP в списке
+                proxies.append(ip)
+            else:
+                print(f'Предупреждение: IP-адрес {ip} уже существует и будет пропущен')
 
-    table = soup.find_all('font', class_='spy14')
-    if table:
-        for row in table:
-            ip = row.text
-            proxies.append(ip)
+    # Собираем информацию из атрибута класса spy1xx
+    tr_spy1xx = soup.find_all('tr', class_='spy1xx')
+    for tr in tr_spy1xx:
+        font_spy14 = tr.find('font', class_='spy14')
+        if font_spy14:
+            ip = font_spy14.text.strip()
+            if ip not in proxies: # Проверяем, есть ли уже такой IP в списке
+                proxies.append(ip)
+            else:
+                print(f'Предупреждение: IP-адрес {ip} уже существует и будет пропущен')
 
+    if proxies:
         with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['IP Address'])
             for ip in proxies:
                 writer.writerow([ip])
+        print(f"IP-адреса успешно записаны в файл {output_filename}")
     else:
-        print('Таблица с прокси не найдена. Проверьте структуру сайта.')
-    return proxies
+        print("Не найдено IP-адресов, соответствующих шаблону.")
+
 
 
 headers = {

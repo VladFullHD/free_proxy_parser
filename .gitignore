@@ -1,3 +1,6 @@
 .idea
 .venv
 
+/Proxies.csv
+/proxies.html
+/.idea/
