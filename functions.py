@@ -9,23 +9,121 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium_stealth import stealth
-from urllib3.util import url
 
 
-# Объединение наименования папки и наименования файла, тем самым создается путь к файлу
+
+def url_from_user():
+    """
+    Получает URL-адрес страницы от пользователя.
+    """
+    while True:
+        url = input('Введите URL-адрес страницы (или нажмите Ctrl+C для выхода): ')
+        if url.lower() == 'exit':
+            return None
+        if url:
+            return url
+        print('URL-адрес не может быть пустым. Пожалуйста, попробуйте еще раз.')
+
+
+def url_to_domain(url):
+    """
+    Принимает в качестве аргумента URL-адрес и извлекает из него домен.
+
+    Аргументы:
+        url: URL-адрес страницы.
+
+    Возвращает:
+        Домен. Например, задан URL-адрес www.google.com. Вернет значение "google".
+    """
+    if not url:
+        print('URL-адрес не может быть пустым!')
+        return None
+
+    match = re.search(r"//(?:www\.)?([^/]+)", url)
+    if match:
+        return match.group(1).split(".")[0]
+    return url.split(".")[0]
+
+
+def domain_to_filename(domain):
+    """
+    Получает в качестве аргумента наименование домена и делает из него имя файла.
+
+    Аргументы:
+        domain: Наименование домена.
+
+    Возвращает:
+        Наименование для HTML-страницы по типу: "google.com".
+    """
+
+    if not domain:
+        return 'default_filename.html'
+    filename = domain.replace("://", "_").replace("/", "_").replace(".", "_") + ".html"  # Заменяем недопустимые символы
+    return filename
+
+
+def url_to_filename(url):
+    """
+    Выполняет полный процесс преобразования URL-адреса в имя файла.
+    Использует функции url_to_domain и domain_to_filename.
+
+    Аргументы:
+        url: URL-адрес, из которого необходимо получить имя файла для HTML-страницы.
+
+    Возвращает:
+        Имя файла для HTML-страницы в виде: "google.html"
+    """
+    domain = url_to_domain(url)
+    if domain is None:
+        return None
+    html_filename = domain_to_filename(domain)
+    return html_filename
+
+
 def html_file_path(html_folder, html_filename):
+    """
+    Объединяет наименование папки для хранения HTML-страниц и наименование файла с HTML-страницей.
+    Тем самым создает путь к необходимому нам файлу.
+
+    Аргументы:
+        html_folder: Название папки для хранения HTML-страниц.
+        html_filename: Название файла с HTML-страницей.
+
+    Возвращает:
+        Путь к необходимому нам файлу.
+    """
     return os.path.join(html_folder, html_filename)
 
-# Проверка на наличие папки для хранения HTML-страниц
+
 def html_folder_exists(html_folder):
+    """
+    Проверяет наличие папки для хранения HTML-страниц.
+
+    Аргументы:
+        html_folder: Название папки для хранения HTML-страниц.
+
+    Возвращает:
+        True/False - папка найдена/папка не найдена.
+    """
     if os.path.isdir(html_folder):
         print(f'Папка "{html_folder}" найдена!')
         return True
     else:
         print(f'Папка "{html_folder}" не найдена!')
+        return False
 
-# Проверка на наличие HTML-страницы
+
 def html_file_exists(html_filename, html_path):
+    """
+    Проверяет наличие файла с HTML-страницей.
+
+    Аргументы:
+        html_filename: Наименование файла с HTML-страницей.
+        html_path: Путь к файлу с HTML-страницей.
+
+    Возвращает:
+        True/False - файл найден/файл не найден.
+    """
     if os.path.exists(html_path):
         print(f'Файл "{html_filename}" найден!')
         return True
@@ -33,8 +131,17 @@ def html_file_exists(html_filename, html_path):
         print(f'Файл "{html_filename}" не найден!')
         return False
 
-# Создание папки с определенным названием для хранения HTML-страниц
+
 def create_html_folder(html_folder):
+    """
+    Создает папку с определенным названием для хранения HTML-страниц.
+
+    Аргументы:
+        html_folder: Наименование папки для хранения HTML-страниц.
+
+    Возвращает:
+        True/False - папка успешно создана/произошла ошибка при создании папки.
+    """
     try:
         os.makedirs(html_folder, exist_ok=True)
         print(f'Папка под названием "{html_folder}" успешно создана!')
@@ -43,18 +150,41 @@ def create_html_folder(html_folder):
         print(f'Произошла ошибка при создании папки "{html_folder}": {e}')
         return False
 
-# Сохранение HTML-страницы под определенным названием по необходимому пути
+# Необходимо доработать!
 def save_html_file(html, html_path):
+    """
+    Сохраняет HTML-страницу по заданному пути.
+
+    Аргументы:
+        html: HTML-код страницы записанный в переменную.
+        html_path: Место, в которое будет сохранена HTML-страница.
+
+    Возвращает:
+        True/False - Сохранено/ошибка записи в файл.
+    """
     try:
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(html)
         print(f'HTML-код страницы успешно сохранен в: {html_path}')
+        return True
+    except OSError as e:
+        print(f'Ошибка записи в файл "{html_path}": {e}')
+        return False
     except Exception as e:
-        print(f'Ошибка записи в файл: {e}')
-        return []
+        print(f'Ошибка записи в файл "{html_path}": {e}')
+        return False
 
-# Чтение HTML-страницы и запись в переменную "html"
+
 def open_html_file(html_path):
+    """
+    Читает сохраненную HTML-страницу и записывает ее в переменную.
+
+    Аргументы:
+        html_path: Путь к HTML-странице.
+
+    Возвращает:
+        Переменную "html". В случае ошибки - None - Файл не найден/Ошибка при открытии файла.
+    """
     try:
         with open(html_path, 'r', encoding='utf-8') as f:
             html = f.read()
@@ -67,41 +197,6 @@ def open_html_file(html_path):
         return None
 
 
-def url_from_user():
-    while True:
-        url = input('Введите URL-адрес страницы (или нажмите Ctrl+C для выхода): ')
-        if url.lower() == 'exit':
-            return None
-        if url:
-            return url
-        print('URL-адрес не может быть пустым. Пожалуйста, попробуйте еще раз.')
-
-
-def url_to_domain(url):
-    if not url:
-        print('URL-адрес не может быть пустым!')
-        return None
-
-    match = re.search(r"//(?:www\.)?([^/]+)", url)
-    if match:
-        print(match)
-        return match.group(1).split(".")[0]
-    else:
-        return url.split(".")[0]
-
-
-def domain_to_filename(domain):
-    if not domain:
-        print('sfds')
-        return 'default_filename.html'
-    filename = domain.replace("://", "_").replace("/", "_").replace(".", "_") + ".html"  # Заменяем недопустимые символы
-    return filename
-
-
-def url_to_filename(url):
-    domain = url_to_domain(url)
-    print(domain_to_filename(domain))
-    return domain_to_filename(domain)
 
 def start_or_skip_html_code_collection(html_folder, html_filename, html_path):
     """
@@ -109,6 +204,11 @@ def start_or_skip_html_code_collection(html_folder, html_filename, html_path):
     Проверяет, существует ли HTML-страница для последующей обработки:
     В случае True - запускает функцию обработки HTML-страницы.
     В случае False - запускает функцию сбора HTML-страницы, после чего запускается функция обработки.
+
+    Аргументы:
+        html_folder: Наименование папки с HTML-страницами.
+        html_filename: Наименование файла с HTML-страницей.
+        html_path: Путь к файлу с HTML-страницей.
     """
 
     if html_file_exists(html_filename, html_path):
@@ -125,12 +225,7 @@ def start_or_skip_html_code_collection(html_folder, html_filename, html_path):
             print('Сбор HTML-кода не удался!')
 
 
-def collect_html_code(url: str,
-                   html_directory='html_data',
-                   html_filename='proxies.html',
-                   csv_directory='csv_data',
-                   csv_filename='proxies.csv',
-                   headers=None):
+def collect_html_code(url: str, headers=None):
     """
     Используется для сбора необходимого HTML-кода с заданного URL-адреса.
     После получения HTML-страницы собирает все значения IP:Port и записывает их в csv-файл.
@@ -141,7 +236,7 @@ def collect_html_code(url: str,
     """
 
     # Проверяет, существует ли файл с HTML-кодом страницы. Если да - переходит сразу к обработке HTML-кода
-    if check_html_file_exists(html_directory, html_filename):
+    if html_file_exists(html_directory, html_filename):
         print(f'Файл {html_path} найден. Запускаю парсинг...')
         with open(html_path, 'r', encoding='utf-8') as f:
             html = f.read()
