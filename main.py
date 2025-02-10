@@ -10,7 +10,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium_stealth import stealth
 
 
-def get_free_proxy(url, filename='proxies.html', headers=None, output_filename='proxies.csv'):
+def get_free_proxy(url,
+                   html_directory='html_data',
+                   html_filename='proxies.html',
+                   csv_directory='csv_data',
+                   csv_filename='proxies.csv',
+                   headers=None):
     """
     Используется для сбора необходимого HTML-кода с заданного URL-адреса.
     После получения HTML-страницы собирает все значения IP:Port и записывает их в csv-файл.
@@ -21,10 +26,16 @@ def get_free_proxy(url, filename='proxies.html', headers=None, output_filename='
     """
 
     # Проверяет, существует ли файл с HTML-страницей. Если да - переходит сразу к парсингу.
-    if os.path.exists(filename):
-        print(f'Файл {filename} найден. Запускаю парсинг...')
+    html_path = os.path.join(html_directory, html_filename)
+    csv_path = os.path.join(csv_directory, csv_filename)
+
+    if os.path.exists(html_path):
+        print(f'Файл {html_path} найден. Запускаю парсинг...')
+        with open(html_path, 'r', encoding='utf-8') as f:
+            html = f.read()
     else:
-        print(f'Файл {filename} не найден. Запускаю браузер и выполняю работу по сбору кода HTML-страницы...')
+        print(f'Файл {html_filename} не найден. Запускаю браузер и выполняю работу по сбору кода HTML-страницы...')
+        os.makedirs(html_directory, exist_ok=True)
         options = webdriver.ChromeOptions()
 
 
@@ -83,8 +94,9 @@ def get_free_proxy(url, filename='proxies.html', headers=None, output_filename='
 
             # Запись HTML-кода страницы в файл. Название файла указывает пользователь
             try:
-                with open(filename, 'w', encoding='utf-8') as f:
+                with open(html_path, 'w', encoding='utf-8') as f:
                     f.write(html)
+                print(f'HTML-код страницы сохранён в: {html_path}')
             except Exception as e:
                 print(f'Ошибка записи в файл: {e}')
                 return []
@@ -95,13 +107,6 @@ def get_free_proxy(url, filename='proxies.html', headers=None, output_filename='
             if driver is not None:
                 driver.quit()
 
-    # Открывает сохраненную HTML-страницу и записывает в переменную для дальнейшей передачи в объект BeautifulSoup
-    try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            html = f.read()
-    except FileNotFoundError:
-        print(f'Файл {filename} не найден.')
-        return
 
     # Создает объект BeautifulSoup из полученной HTML-страницы для дальнейшей обработки данных
     soup = BeautifulSoup(html, 'lxml')
@@ -141,7 +146,7 @@ def get_free_proxy(url, filename='proxies.html', headers=None, output_filename='
                 if ip not in proxies: # Проверяем, есть ли уже такой IP в списке
                     proxies.append(ip)
                     added_count += 1
-                    print(f'IP-адрес {ip} добавлен в список! Всего добавлено < {added_count} >')
+                    print(f'IP-адрес {ip} добавлен в список! Всего добавлено - < {added_count} >')
                 else:
                     repeated_proxies += 1
                     print(f'Предупреждение: IP-адрес {ip} уже существует и будет пропущен! Всего дублирующихся - < {repeated_proxies} >')
@@ -151,18 +156,19 @@ def get_free_proxy(url, filename='proxies.html', headers=None, output_filename='
                     f'Предупреждение: IP-адрес {ip} не работает и будет пропущен! Всего пропущено - < {not_added_count} >')
 
     if proxies: # Если список proxies не пустой - записываем значения в csv-файл
-        with open(output_filename, 'w', newline='', encoding='utf-8') as csvfile:
+        os.makedirs(csv_directory, exist_ok=True)
+        with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['IP Address'])
             for ip in proxies:
                 writer.writerow([ip])
-        print(f"IP-адреса успешно записаны в файл {output_filename}!")
+        print(f"IP-адреса успешно записаны в файл {csv_path}!")
 
         # Выводит сообщение, уведомляющее о кол-ве валидных / невалидных прокси
-        print(f'Всего добавлено рабочих прокси = {added_count:5}!\n'
-              f'Всего дублирующихся прокси = {repeated_proxies:5}!\n'
-              f'Всего нерабочих прокси = {not_added_count:5}!\n'
-              f'Итого обработано прокси = {added_count + repeated_proxies + not_added_count:5}!\n')
+        print(f'Всего добавлено рабочих прокси - {added_count:5}!\n'
+              f'Всего дублирующихся прокси - {repeated_proxies:5}!\n'
+              f'Всего нерабочих прокси - {not_added_count:5}!\n'
+              f'Итого обработано прокси - {added_count + repeated_proxies + not_added_count:5}!\n')
 
         # Подсчет времени, затраченного на обработку и проверку прокси
         end_time = time.time()
