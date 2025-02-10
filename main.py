@@ -25,14 +25,16 @@ def get_free_proxy(url,
     на запрос IP:Port добавляется в список, после чего список сохраняется в csv-файл.
     """
 
-    # Проверяет, существует ли файл с HTML-страницей. Если да - переходит сразу к парсингу.
+    # Прописывает путь к HTML-коду страницы и итоговому csv-файлу
     html_path = os.path.join(html_directory, html_filename)
     csv_path = os.path.join(csv_directory, csv_filename)
 
+    # Проверяет, существует ли файл с HTML-кодом страницы. Если да - переходит сразу к парсингу
     if os.path.exists(html_path):
         print(f'Файл {html_path} найден. Запускаю парсинг...')
         with open(html_path, 'r', encoding='utf-8') as f:
             html = f.read()
+    # Если файл с HTML-кодом страницы не найден - запускает процесс сбора кода HTML-страницы
     else:
         print(f'Файл {html_filename} не найден. Запускаю браузер и выполняю работу по сбору кода HTML-страницы...')
         os.makedirs(html_directory, exist_ok=True)
@@ -155,8 +157,8 @@ def get_free_proxy(url,
                 print(
                     f'Предупреждение: IP-адрес {ip} не работает и будет пропущен! Всего пропущено - < {not_added_count} >')
 
-    if proxies: # Если список proxies не пустой - записываем значения в csv-файл
-        os.makedirs(csv_directory, exist_ok=True)
+    if proxies: # Если список proxies не пустой - записывает значения в csv-файл
+        os.makedirs(csv_directory, exist_ok=True) # Создает директорию, в которую будет записан csv-файл
         with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(['IP Address'])
